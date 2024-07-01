@@ -1,41 +1,36 @@
-#!/usr/bin/env python3
-
 from app import app
-from models import db, Restaurant, Pizza, RestaurantPizza
+from models import db, Eatery, Pie, EateryPizza
 
 with app.app_context():
+    EateryPizza.query.delete()
+    Pie.query.delete()
+    Eatery.query.delete()
 
-    # This will delete any existing rows
-    # so you can run the seed file multiple times without having duplicate entries in your database
-    print("Deleting data...")
-    Pizza.query.delete()
-    Restaurant.query.delete()
-    RestaurantPizza.query.delete()
-
-    print("Creating restaurants...")
-    shack = Restaurant(name="Karen's Pizza Shack", address='address1')
-    bistro = Restaurant(name="Sanjay's Pizza", address='address2')
-    palace = Restaurant(name="Kiki's Pizza", address='address3')
-    restaurants = [shack, bistro, palace]
-
-    print("Creating pizzas...")
-
-    cheese = Pizza(name="Emma", ingredients="Dough, Tomato Sauce, Cheese")
-    pepperoni = Pizza(
-        name="Geri", ingredients="Dough, Tomato Sauce, Cheese, Pepperoni")
-    california = Pizza(
-        name="Melanie", ingredients="Dough, Sauce, Ricotta, Red peppers, Mustard")
-    pizzas = [cheese, pepperoni, california]
-
-    print("Creating RestaurantPizza...")
-
-    pr1 = RestaurantPizza(restaurant=shack, pizza=cheese, price=1)
-    pr2 = RestaurantPizza(restaurant=bistro, pizza=pepperoni, price=4)
-    pr3 = RestaurantPizza(restaurant=palace, pizza=california, price=5)
-    restaurantPizzas = [pr1, pr2, pr3]
-    db.session.add_all(restaurants)
-    db.session.add_all(pizzas)
-    db.session.add_all(restaurantPizzas)
+    # Create and add eateries
+    eateries = [
+        Eatery(name="Karen's Pizza Shack", location='address1'),
+        Eatery(name="Sanjay's Pizza", location='address2'),
+        Eatery(name="Kiki's Pizza", location='address3')
+    ]
+    db.session.add_all(eateries)
     db.session.commit()
 
-    print("Seeding done!")
+    # Create and add pies
+    pies = [
+        Pie(name="Emma", toppings="Dough, Tomato Sauce, Cheese"),
+        Pie(name="Geri", toppings="Dough, Tomato Sauce, Cheese, Pepperoni"),
+        Pie(name="Melanie", toppings="Dough, Sauce, Ricotta, Red peppers, Mustard")
+    ]
+    db.session.add_all(pies)
+    db.session.commit()
+
+    # Create and add eatery-pie relationships
+    eatery_pizzas = [
+        EateryPizza(eatery=eateries[0], pizza=pies[0], cost=1),
+        EateryPizza(eatery=eateries[1], pizza=pies[1], cost=4),
+        EateryPizza(eatery=eateries[2], pizza=pies[2], cost=5)
+    ]
+    db.session.add_all(eatery_pizzas)
+    db.session.commit()
+
+    print("Seeding completed!")
