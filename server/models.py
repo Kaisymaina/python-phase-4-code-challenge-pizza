@@ -1,6 +1,8 @@
+
+
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import MetaData, ForeignKey
-from sqlalchemy.orm import validates, relationship
+from sqlalchemy import MetaData
+from sqlalchemy.orm import validates
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy_serializer import SerializerMixin
 
@@ -12,56 +14,67 @@ metadata = MetaData(
 
 db = SQLAlchemy(metadata=metadata)
 
-class Eatery(db.Model, SerializerMixin):
-    __tablename__ = "eateries"
+
+class Restaurant(db.Model, SerializerMixin):
+    __tablename__ = "restaurants"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    location = db.Column(db.String, nullable=False)
+    name = db.Column(db.String)
+    address = db.Column(db.String)
 
-    eatery_pizzas = relationship("EateryPizza", back_populates="eatery")
-    pizzas = association_proxy("eatery_pizzas", "pizza")
+    # add relationship
+    restaurant_pizzas = db.relationship('RestaurantPizza', back_populates='restaurant', cascade="all, delete")
 
-    serialize_rules = ('-eatery_pizzas.eatery',)
+    # add serialization rules
+    serialize_rules = ('-restaurant_pizzas.restaurant',)
+
+    restaurants = association_proxy('restaurant_pizzas', 'pizza', creator=lambda pizza_obj: RestaurantPizza(pizza=pizza_obj))
 
     def __repr__(self):
-        return f"<Eatery {self.name}>"
+        return f"<Restaurant {self.name}>"
 
-class Pie(db.Model, SerializerMixin):
-    __tablename__ = "pies"
+
+class Pizza(db.Model, SerializerMixin):
+    __tablename__ = "pizzas"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
-    toppings = db.Column(db.String, nullable=False)
+    name = db.Column(db.String)
+    ingredients = db.Column(db.String)
 
-    eatery_pizzas = relationship("EateryPizza", back_populates="pizza")
-    eateries = association_proxy("eatery_pizzas", "eatery")
+    # add relationship
+    restaurant_pizzas = db.relationship('RestaurantPizza', back_populates='pizza', cascade="all, delete")
 
-    serialize_rules = ('-eatery_pizzas.pizza',)
+    # add serialization rules
+    serialize_rules = ('-restaurant_pizzas.pizza',)
+
+    pizzas = association_proxy('restaurant_pizzas', 'restaurant', creator=lambda restaurant_obj: RestaurantPizza(restaurant=restaurant_obj))
 
     def __repr__(self):
-        return f"<Pie {self.name}, {self.toppings}>"
+        return f"<Pizza {self.name}, {self.ingredients}>"
 
-class EateryPizza(db.Model, SerializerMixin):
-    __tablename__ = "eatery_pizzas"
+
+class RestaurantPizza(db.Model, SerializerMixin):
+    __tablename__ = "restaurant_pizzas"
 
     id = db.Column(db.Integer, primary_key=True)
-    cost = db.Column(db.Integer, nullable=False)
+    price = db.Column(db.Integer, nullable=False)
 
-    eatery_id = db.Column(db.Integer, ForeignKey('eateries.id'), nullable=False)
-    pizza_id = db.Column(db.Integer, ForeignKey('pies.id'), nullable=False)
+    # add relationships
+    pizza_id = db.Column(db.Integer, db.ForeignKey('pizzas.id'))
+    restaurant_id = db.Column(db.Integer, db.ForeignKey('restaurants.id'))
 
-    eatery = relationship("Eatery", back_populates="eatery_pizzas")
-    pizza = relationship("Pie", back_populates="eatery_pizzas")
+    pizza = db.relationship('Pizza', back_populates='restaurant_pizzas')
+    restaurant = db.relationship('Restaurant', back_populates='restaurant_pizzas')
 
-    serialize_rules = ('-eatery.eatery_pizzas', '-pizza.eatery_pizzas')
+    # add serialization rules
+    serialize_rules = ('-pizza.restaurant_pizzas', '-restaurant.restaurant_pizzas')
 
-    @validates('cost')
-    def validate_cost(self, key, cost):
-        if cost < 1 or cost > 30:
-            raise ValueError("Cost must be between 1 and 30")
-        return cost
+    # add validation
+    @validates('price')
+    def price_validation(self, key, price):
+        if not (1 <= price <= 30):
+            raise ValueError("Price must be between 1 and 30")
+        return price
 
     def __repr__(self):
-        return f"<EateryPizza ${self.cost}>"
-
+        return f"<RestaurantPizza ${self.price}>"
